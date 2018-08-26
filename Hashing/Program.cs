@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using static System.Console;
 
 namespace Hashing
@@ -13,50 +17,37 @@ namespace Hashing
         static byte[] shaInput = new byte[256];
         static Random random = new Random();
         static StringBuilder hashString = new StringBuilder();
+        static BigInteger maxHash = BigInteger.Pow(new BigInteger(2), 256);
+
 
         static void Main(string[] args)
         {
-            var maxLeadingZeros = 0;
+            var lowestHash = maxHash;
+            var stopwatch = Stopwatch.StartNew();
 
-            for (int i = 0; i < 1000000; i++)
+            while (true)
             {
-                var hash = Hash();
+                random.NextBytes(shaInput);
+                var hash = crypt.ComputeHash(shaInput);
+                var hashInt = new BigInteger(hash.Reverse().ToArray());
 
-                if (hash.LeadingZeros > maxLeadingZeros)
+                if (hashInt.Sign == 1 && hashInt < lowestHash)
                 {
-                    maxLeadingZeros = hash.LeadingZeros;
-                    WriteLine("Leading Zeros: {0}", hash.LeadingZeros);
-                    PrintHash(hash.Binary);
+                    lowestHash = hashInt;
+
+                    hashString = new StringBuilder();
+                    foreach (var @byte in hash)
+                    {
+                        var binaryStr = Convert.ToString(@byte, 2).PadLeft(8, '0');
+                        hashString.Append(binaryStr);
+                    }
+
+                    var leadingZeros = hashString.ToString().TakeWhile(c => c == '0').Count();
+
+
+                    WriteLine("{0} - {1} - {2}", stopwatch.Elapsed, leadingZeros, hashInt);
                 }
             }
-        }
-
-        private static void PrintHash(string binary)
-        {
-            WriteLine(string.Join(Environment.NewLine, Split(binary, 32)));
-        }
-
-        static (string Binary, int LeadingZeros) Hash()
-        {
-            random.NextBytes(shaInput);
-            var hash = crypt.ComputeHash(shaInput);
-
-            hashString.Clear();
-            foreach (var @byte in hash)
-            {
-                var binaryStr = Convert.ToString(@byte, 2).PadLeft(8, '0');
-                hashString.Append(binaryStr);
-            }
-
-            var leadingZeros = hashString.ToString().Split('1')[0].Length;
-
-            return (hashString.ToString(), leadingZeros);
-        }
-
-        static IEnumerable<string> Split(string str, int chunkSize)
-        {
-            return Enumerable.Range(0, str.Length / chunkSize)
-                .Select(i => str.Substring(i * chunkSize, chunkSize));
         }
     }
 }
