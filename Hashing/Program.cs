@@ -14,7 +14,6 @@ namespace Hashing
     class Program
     {
         static SHA256Managed crypt = new SHA256Managed();
-        static byte[] shaInput = new byte[256];
         static Random random = new Random();
         static StringBuilder hashString = new StringBuilder();
         static BigInteger maxHash = BigInteger.Pow(new BigInteger(2), 256);
@@ -27,8 +26,8 @@ namespace Hashing
 
             while (true)
             {
-                random.NextBytes(shaInput);
-                var hash = crypt.ComputeHash(shaInput);
+                var nonce = BitConverter.GetBytes(random.Next());
+                var hash = crypt.ComputeHash(nonce);
                 var hashInt = new BigInteger(hash.Reverse().ToArray());
 
                 if (hashInt.Sign == 1 && hashInt < lowestHash)
@@ -44,8 +43,7 @@ namespace Hashing
 
                     var leadingZeros = hashString.ToString().TakeWhile(c => c == '0').Count();
 
-
-                    WriteLine("{0} - {1} - {2}", stopwatch.Elapsed, leadingZeros, hashInt);
+                    WriteLine("{0} - {1}", leadingZeros, hashInt);
                 }
             }
         }
